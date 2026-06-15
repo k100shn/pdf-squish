@@ -1,0 +1,27 @@
+name: PDFSquish
+options:
+  bundleIdPrefix: com.krishan
+  deploymentTarget:
+    macOS: "13.0"
+  xcodeVersion: "15.0"
+  createIntermediateGroups: true
+settings:
+  SWIFT_VERSION: "5.9"
+  MACOSX_DEPLOYMENT_TARGET: "13.0"
+targets:
+  PDFSquish:
+    type: application
+    platform: macOS
+    sources:
+      - path: PDFSquish
+        type: group
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.krishan.pdfsquish
+      PRODUCT_NAME: PDFSquish
+      INFOPLIST_FILE: PDFSquish/Info.plist
+      CODE_SIGN_ENTITLEMENTS: PDFSquish/PDFSquish.entitlements
+      MARKETING_VERSION: "1.0"
+      CURRENT_PROJECT_VERSION: 1
+      GENERATE_INFOPLIST_FILE: false
+      SWIFT_EMIT_LOC_STRINGS: true
+      CODE_SIGN_STYLE: Manual

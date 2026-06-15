@@ -1,0 +1,52 @@
+# Build output
+build/
+DerivedData/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+
+# Xcode
+*.pbxuser
+*.perspectivev3
+!default.pbxuser
+!default.perspectivev3
+*.mode1v3
+*.mode2v3
+!default.mode1v3
+!default.mode2v3
+xcuserdata/
+*.xccheckout
+*.moved-aside
+*.hmap
+*.ipa
+
+# XcodeGen
+PDFSquish.xcodeproj
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Signing / notarization secrets — never commit
+*.p12
+*.cer
+*.certSigningRequest
+*.provisionprofile
+*.mobileprovision
+*.pem
+*.key
+
+# Distributable artifacts
+*.app
+*.zip
+*.dmg
