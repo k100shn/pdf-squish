@@ -1,0 +1,79 @@
+# Cheap PR gate for PDFSquish. One job so branch protection can require "Fast gate".
+# macOS compile/notarize stays out: it needs an Xcode runner and burns minutes.
+
+name: Fast gate
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fast-gate-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fast-gate:
+    name: Fast gate
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Lint build.sh
+        run: |
+          bash -n build.sh
+          shellcheck build.sh
+
+      - name: Parse Swift sources
+        run: |
+          if ! command -v swiftc >/dev/null 2>&1 && [ -x /usr/share/swift/usr/bin/swiftc ]; then
+            export PATH="/usr/share/swift/usr/bin:${PATH}"
+          fi
+          swiftc --version
+          # Syntax only. AppKit/SwiftUI/PDFKit are not on Linux, so this is not a typecheck.
+          swiftc -parse \
+            PDFSquish/PDFSquishApp.swift \
+            PDFSquish/ContentView.swift \
+            PDFSquish/PDFCompressor.swift \
+            >/dev/null
+
+      - name: Parse property lists
+        run: |
+          python3 - <<'PY'
+          import plistlib
+          from pathlib import Path
+
+          paths = [
+              Path("PDFSquish/Info.plist"),
+              Path("PDFSquish/PDFSquish.entitlements"),
+              Path("PDFSquish/PrivacyInfo.xcprivacy"),
+          ]
+          for path in paths:
+              with path.open("rb") as handle:
+                  plistlib.load(handle)
+              print(f"ok {path}")
+          PY
+
+      - name: Check project.yml and Swift file list
+        run: |
+          yamllint -d '{extends: default, rules: {document-start: disable}}' project.yml
+          ruby -ryaml <<'RUBY'
+          d = YAML.load_file("project.yml")
+          abort("expected name PDFSquish") unless d["name"] == "PDFSquish"
+          swift = d.dig("settings", "SWIFT_VERSION")
+          abort("expected SWIFT_VERSION 5.9, got #{swift.inspect}") unless swift == "5.9"
+          target = d.dig("options", "deploymentTarget", "macOS")
+          abort("expected macOS deployment target 13.0, got #{target.inspect}") unless target == "13.0"
+          sources = Dir["PDFSquish/*.swift"].map { |p| File.basename(p) }.sort
+          listed = File.read("build.sh").scan(%r{\$SRC_DIR/([A-Za-z0-9_]+\.swift)}).flatten.sort
+          unless sources == listed
+            abort("Swift sources and build.sh SWIFT_FILES differ\n  on disk: #{sources}\n  build.sh: #{listed}")
+          end
+          puts "project.yml ok; #{sources.size} Swift files match build.sh"
+          RUBY
